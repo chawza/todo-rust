@@ -42,7 +42,17 @@ fn main() {
                 todos.push(Todo{title: title_buffer});
             },
             'd' => {
-                print!("DELTE");
+                let mut item_idx = String::new();
+                input_reader.read_line(&mut item_idx).unwrap();
+
+                let idx = item_idx.trim().parse::<usize>().unwrap();
+                
+                if idx <= todos.len() && idx > 0 {
+                    todos.remove(idx - 1);
+                } else {
+                    print!("Out of Index! {}", idx)
+                }
+
             },
             'q' => break,
             _ => {
