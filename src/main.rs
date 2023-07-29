@@ -2,22 +2,34 @@ use std::io;
 use std::fs::File;
 use std::io::{Write, BufReader, BufRead};
 use std::str::FromStr;
+use chrono::{NaiveDate, Local};
 
 type Todos = Vec<Todo>;
 
+static DATE_STRING: &str = "%Y-%m-%d";
+static PRETTY_DATE_STRING: &str = "%Y %m %d";
+
 struct Todo {
     title: String,
+    date: NaiveDate,
 }
+
+impl Todo {
+    fn date_str(&self) -> String {
+        self.date.format(PRETTY_DATE_STRING).to_string()
+    }
+}
+
 
 fn print_todos(todos: &mut Vec<Todo>) {
     for (idx, todo) in todos.iter().enumerate() {
-        println!("{}) {}", idx + 1, todo.title)
+        println!("{}) {} {}", idx + 1, todo.title, todo.date_str())
     }
 }
 
 fn save_to_csv(file: &mut File, todos: &mut Vec<Todo>) {
     for todo in todos {
-        let line = format!("{}\n", todo.title);
+        let line = format!("{},{}\n", todo.title, todo.date.format(&DATE_STRING));
         let _ = file.write(line.as_bytes());
     }
 }
@@ -31,7 +43,22 @@ fn load_from_existing_csv_file(filepath: &str) -> Result<Todos, String> {
     let reader = BufReader::new(file);
     for line in reader.lines() {
         let row = line.expect("Unable to load row");
-        loaded_todos.push(Todo{title: row });
+        let columns: Vec<&str> = row.split(',').collect();
+
+        if columns.len() != 2 {
+            panic!("Invalid number column in CSV!");
+        }
+
+        let title = columns.get(0).unwrap();
+        let date_str = columns.get(1).unwrap();
+
+        let date = match NaiveDate::parse_from_str(&date_str, DATE_STRING) {
+            Ok(res) => res,
+            Err(_) => {
+                panic!("Cannot parse {}", &date_str);
+            }
+        };
+        loaded_todos.push(Todo{title: String::from_str(title).unwrap(), date });
     }
     println!("{} Todos Loaded!", loaded_todos.len());
     Ok(loaded_todos)
@@ -72,10 +99,30 @@ fn main() {
 
         match prompt_choice {
             'a' => {
-                print!("{}", "Enter title\n");
+                println!("Enter title: ");
                 let mut title_buffer = String::new();
                 input_reader.read_line(&mut title_buffer).unwrap();
-                todos.push(Todo{title: String::from_str(title_buffer.trim()).unwrap()});
+                let title = String::from_str(title_buffer.trim()).unwrap();
+
+                println!("Enter date (\"YYYY MM DD\" / \"today\"): ");
+                let mut date_buffer = String::new();
+                input_reader.read_line(&mut date_buffer).unwrap();
+
+                let date: NaiveDate;
+                
+                if date_buffer.contains("today") {
+                    date = Local::now().naive_local().date();
+                } else {
+                    date = match NaiveDate::parse_from_str(&date_buffer.trim(), PRETTY_DATE_STRING) {
+                        Ok(res) => res,
+                        Err(msg) => {
+                            println!("Cannot parse [{}]: {}", date_buffer, msg);
+                            continue
+                        }
+                    };
+                }
+
+                todos.push(Todo{title, date});
             },
             'd' => {
                 let mut item_idx = String::new();
