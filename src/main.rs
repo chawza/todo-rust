@@ -1,6 +1,7 @@
 use std::io;
+use std::process::Command;
 use std::fs::File;
-use std::io::{Write, BufReader, BufRead};
+use std::io::{Write, BufReader, BufRead, stdout};
 use std::str::FromStr;
 use chrono::{NaiveDate, Local};
 
@@ -8,6 +9,10 @@ type Todos = Vec<Todo>;
 
 static DATE_STRING: &str = "%Y-%m-%d";
 static PRETTY_DATE_STRING: &str = "%Y %m %d";
+
+fn clear() {
+    Command::new("clear").status().unwrap();
+}
 
 struct Todo {
     title: String,
@@ -67,11 +72,11 @@ fn load_from_existing_csv_file(filepath: &str) -> Result<Todos, String> {
 fn save_todos(db_path: &str, todos: &mut Vec<Todo>) {
     let mut target_file = match File::options().write(true).open(db_path) {
         Ok(file) => {
-            println!("Use Existing db");
+            println!("save to existing db ({})", db_path);
             file
         },
         Err(_) => {
-            println!("Create new DB");
+            println!("Create new db ({})", db_path);
             File::create(db_path).unwrap()
         }
     };
@@ -90,8 +95,9 @@ fn main() {
 
     };
 
-    let mut choice = String::new();
     let input_reader = io::stdin();
+    let mut stdout = stdout();
+    let mut choice = String::new();
 
     let choice_prompt = "\
         Choices:\n\
@@ -103,6 +109,7 @@ fn main() {
 
     loop {
         choice.clear();
+        clear();
 
         print_todos(&mut todos);
         println!("{}", choice_prompt);
@@ -110,15 +117,18 @@ fn main() {
         input_reader.read_line(&mut choice).unwrap();
 
         let prompt_choice = choice.chars().next().unwrap();
+        clear();
 
         match prompt_choice {
             'a' => {
-                println!("Enter title: ");
+                print!("Enter title: ", );
+                stdout.flush().unwrap();
                 let mut title_buffer = String::new();
                 input_reader.read_line(&mut title_buffer).unwrap();
                 let title = String::from_str(title_buffer.trim()).unwrap();
 
-                println!("Enter date (\"YYYY MM DD\" / \"today\"): ");
+                print!("Enter date (\"YYYY MM DD\" / \"today\"): ");
+                stdout.flush().unwrap();
                 let mut date_buffer = String::new();
                 input_reader.read_line(&mut date_buffer).unwrap();
 
@@ -168,7 +178,6 @@ fn main() {
             _ => {
                 println!("????");
             }
-        } 
-        
+        };
     }
 }
