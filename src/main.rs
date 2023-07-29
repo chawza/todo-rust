@@ -64,6 +64,20 @@ fn load_from_existing_csv_file(filepath: &str) -> Result<Todos, String> {
     Ok(loaded_todos)
 }
 
+fn save_todos(db_path: &str, todos: &mut Vec<Todo>) {
+    let mut target_file = match File::options().write(true).open(db_path) {
+        Ok(file) => {
+            println!("Use Existing db");
+            file
+        },
+        Err(_) => {
+            println!("Create new DB");
+            File::create(db_path).unwrap()
+        }
+    };
+    save_to_csv(&mut target_file, todos)
+}
+
 
 fn main() {
     let db_path = "./test.csv";
@@ -138,19 +152,19 @@ fn main() {
 
             },
             's' => {
-                let mut target_file = match File::options().write(true).open(db_path) {
-                    Ok(file) => {
-                        println!("Use Existing db");
-                        file
-                    },
-                    Err(_) => {
-                        println!("Create new DB");
-                        File::create(db_path).unwrap()
-                    }
-                };
-                save_to_csv(&mut target_file, &mut todos)
+                save_todos(db_path, &mut todos);
             },
-            'q' => break,
+            'q' => {
+                choice.clear();
+                println!("Save any changes? [y/n]");
+                input_reader.read_line(&mut choice).unwrap();
+                match choice.chars().next().unwrap() {
+                    'y' => save_todos(db_path, &mut todos),
+                    _ => () 
+                }
+                break
+            },
+
             _ => {
                 println!("????");
             }
