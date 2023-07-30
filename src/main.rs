@@ -1,18 +1,14 @@
 mod store;
+mod utils;
 
-use std::io::{self, stdin};
-use std::process::Command;
-use std::io::{Write, stdout};
+use std::io::{Write, stdout, stdin};
 use std::str::FromStr;
 use chrono::{NaiveDate, Local};
 
 use store::store::StoreSesssion;
+use utils::console;
 
 static PRETTY_DATE_STRING: &str = "%Y %m %d";
-
-fn clear() {
-    Command::new("clear").status().unwrap();
-}
 
 pub struct Todo {
     id: usize,
@@ -39,7 +35,7 @@ fn main() {
 
     let store = StoreSesssion::open(sqlite_path);
     
-    let stdin_reader = io::stdin();
+    let stdin_reader = stdin();
     let mut stdout_reader = stdout();
     let mut choice = String::new();
     
@@ -54,7 +50,7 @@ fn main() {
 
     loop {
         choice.clear();
-        clear();
+        console::clear();
 
         print_todos(&mut todos);
         println!("{}", choice_prompt);
@@ -62,7 +58,7 @@ fn main() {
         stdin_reader.read_line(&mut choice).unwrap();
 
         let prompt_choice = choice.chars().next().unwrap();
-        clear();
+        console::clear();
 
         match prompt_choice {
             'a' => {
@@ -95,10 +91,9 @@ fn main() {
                 todos = store.fetch_all_todos();
             },
             'd' => {
-                inline_prompt("Select item index: ");
+                console::inline_prompt("Select item index: ");
                 let mut item_idx = String::new();
                 stdin_reader.read_line(&mut item_idx).unwrap();
-
                 let idx = item_idx.trim().parse::<usize>().unwrap();
 
                 if idx <= todos.len() && idx > 0 {
@@ -108,7 +103,7 @@ fn main() {
                     todos = store.fetch_all_todos();
                 } else {
                     println!("Out of Index! {}", idx);
-                    press_enter_to_contune();
+                    console::press_enter_to_contune();
                 }
 
             },
@@ -118,15 +113,4 @@ fn main() {
             }
         };
     }
-}
-
-fn inline_prompt(prompt: &str) {
-    print!("{}", prompt);
-    stdout().flush().unwrap();
-}
-
-fn press_enter_to_contune() {
-    print!("Press Enter to continue:");
-    stdout().flush().unwrap();
-    let _ = stdin().read_line(&mut String::new());
 }
