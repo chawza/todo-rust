@@ -36,7 +36,6 @@ fn main() {
     let store = StoreSesssion::open(sqlite_path);
     
     let stdin_reader = stdin();
-    let mut stdout_reader = stdout();
     let mut choice = String::new();
     
     let mut todos = store.fetch_all_todos();
@@ -62,19 +61,16 @@ fn main() {
 
         match prompt_choice {
             'a' => {
-                print!("Enter title: ", );
-                stdout_reader.flush().unwrap();
+                console::inline_prompt("Enter title: ");
                 let mut title_buffer = String::new();
                 stdin_reader.read_line(&mut title_buffer).unwrap();
                 let title = String::from_str(title_buffer.trim()).unwrap();
 
-                print!("Enter date (\"YYYY MM DD\" / \"today\"): ");
-                stdout_reader.flush().unwrap();
+                console::inline_prompt("Enter date (\"YYYY MM DD\" / \"today\"): ");
                 let mut date_buffer = String::new();
                 stdin_reader.read_line(&mut date_buffer).unwrap();
 
                 let date: NaiveDate;
-                
                 if date_buffer.contains("today") {
                     date = Local::now().naive_local().date();
                 } else {
